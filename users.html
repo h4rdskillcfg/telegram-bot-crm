@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}Все пользователи - Telegram Bot CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-users"></i> Все пользователи
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshUsers()">
+                <i class="fas fa-sync-alt"></i> Обновить
+            </button>
+        </div>
+        <div class="input-group">
+            <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Поиск пользователей...">
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-primary" id="totalCount">{{ users|length }}</h4>
+                            <small class="text-muted">Всего пользователей</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-success" id="activeCount">
+                                {{ users|selectattr(5, 'equalto', 1)|list|length }}
+                            </h4>
+                            <small class="text-muted">Активных</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-info" id="newTodayCount">
+                                {{ users|selectattr(4, 'contains', today)|list|length }}
+                            </h4>
+                            <small class="text-muted">Новых сегодня</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-warning" id="newWeekCount">
+                                {{ users|selectattr(4, 'contains', week)|list|length }}
+                            </h4>
+                            <small class="text-muted">Новых за неделю</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list"></i> Список пользователей
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <i class="fas fa-sort"></i> ID
+                                </th>
+                                <th>
+                                    <i class="fas fa-user"></i> Имя
+                                </th>
+                                <th>
+                                    <i class="fas fa-at"></i> Username
+                                </th>
+                                <th>
+                                    <i class="fas fa-calendar"></i> Дата регистрации
+                                </th>
+                                <th>
+                                    <i class="fas fa-clock"></i> Последняя активность
+                                </th>
+                                <th>
+                                    <i class="fas fa-circle"></i> Статус
+                                </th>
+                                <th>
+                                    <i class="fas fa-cogs"></i> Действия
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr data-user-id="{{ user[0] }}">
+                                <td>
+                                    <code>{{ user[0] }}</code>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                            <span class="text-white fw-bold">{{ user[2][0] if user[2] else '?' }}</span>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold">{{ user[2] or 'Не указано' }}</div>
+                                            {% if user[3] %}
+                                                <small class="text-muted">{{ user[3] }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if user[1] %}
+                                        <span class="badge bg-primary">@{{ user[1] }}</span>
+                                    {% else %}
+                                        <span class="text-muted">Не указан</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ user[4] }}</small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ user[6] or 'Неизвестно' }}</small>
+                                </td>
+                                <td>
+                                    {% if user[5] %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-circle"></i> Активен
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-circle"></i> Неактивен
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-primary" onclick="viewUser({{ user[0] }})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-success" onclick="sendMessage({{ user[0] }})">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-info" onclick="viewHistory({{ user[0] }})">
+                                            <i class="fas fa-history"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно просмотра пользователя -->
+<div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Информация о пользователе</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="userModalContent">
+                <!-- Контент будет загружен динамически -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно отправки сообщения -->
+<div class="modal fade" id="messageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Отправить сообщение</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="messageForm">
+                    <div class="mb-3">
+                        <label for="messageText" class="form-label">Текст сообщения:</label>
+                        <textarea class="form-control" id="messageText" rows="4" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="sendUserMessage()">Отправить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentUserId = null;
+
+function refreshUsers() {
+    location.reload();
+}
+
+function searchUsers() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('#usersTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function viewUser(userId) {
+    // В реальном приложении здесь будет загрузка данных пользователя
+    const modalContent = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Основная информация</h6>
+                <p><strong>ID:</strong> ${userId}</p>
+                <p><strong>Имя:</strong> Пользователь ${userId}</p>
+                <p><strong>Username:</strong> @user${userId}</p>
+                <p><strong>Дата регистрации:</strong> ${new Date().toLocaleDateString()}</p>
+            </div>
+            <div class="col-md-6">
+                <h6>Статистика</h6>
+                <p><strong>Сообщений:</strong> 15</p>
+                <p><strong>Последняя активность:</strong> ${new Date().toLocaleString()}</p>
+                <p><strong>Статус:</strong> <span class="badge bg-success">Активен</span></p>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('userModalContent').innerHTML = modalContent;
+    new bootstrap.Modal(document.getElementById('userModal')).show();
+}
+
+function sendMessage(userId) {
+    currentUserId = userId;
+    document.getElementById('messageText').value = '';
+    new bootstrap.Modal(document.getElementById('messageModal')).show();
+}
+
+function sendUserMessage() {
+    const messageText = document.getElementById('messageText').value;
+    if (!messageText.trim()) {
+        alert('Введите текст сообщения');
+        return;
+    }
+    
+    // В реальном приложении здесь будет отправка сообщения
+    alert(`Сообщение отправлено пользователю ${currentUserId}: ${messageText}`);
+    bootstrap.Modal.getInstance(document.getElementById('messageModal')).hide();
+}
+
+function viewHistory(userId) {
+    // В реальном приложении здесь будет загрузка истории сообщений
+    alert(`История сообщений пользователя ${userId} будет загружена`);
+}
+
+// Поиск при вводе
+document.getElementById('searchInput').addEventListener('input', searchUsers);
+
+// Сортировка таблицы
+document.querySelectorAll('#usersTable th').forEach((header, index) => {
+    header.addEventListener('click', () => {
+        const table = document.getElementById('usersTable');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        
+        rows.sort((a, b) => {
+            const aText = a.cells[index].textContent;
+            const bText = b.cells[index].textContent;
+            return aText.localeCompare(bText);
+        });
+        
+        rows.forEach(row => tbody.appendChild(row));
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Статистика - Telegram Bot CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-chart-bar"></i> Статистика бота
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshStats()">
+                <i class="fas fa-sync-alt"></i> Обновить
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Статистические карточки -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
+                            Всего пользователей
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-white" id="total-users">
+                            {{ stats.total_users }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
+                            Активных за неделю
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-white" id="active-users">
+                            {{ stats.active_users }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-user-check fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
+                            Новых за сегодня
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-white" id="new-users-today">
+                            {{ stats.new_users_today }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-user-plus fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
+                            Новых за неделю
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-white" id="new-users-week">
+                            {{ stats.new_users_week }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-calendar-week fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- График активности -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line"></i> Активность пользователей
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="activityChart" width="400" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Последние пользователи -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock"></i> Последние зарегистрированные пользователи
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Имя</th>
+                                <th>Username</th>
+                                <th>Дата регистрации</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user[0] }}</td>
+                                <td>{{ user[2] }} {{ user[3] or '' }}</td>
+                                <td>
+                                    {% if user[1] %}
+                                        <span class="badge bg-primary">@{{ user[1] }}</span>
+                                    {% else %}
+                                        <span class="text-muted">Не указан</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ user[4] }}</td>
+                                <td>
+                                    {% if user[5] %}
+                                        <span class="badge bg-success">Активен</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Неактивен</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function refreshStats() {
+    fetch('/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('total-users').textContent = data.total_users;
+            document.getElementById('active-users').textContent = data.active_users;
+            document.getElementById('new-users-today').textContent = data.new_users_today;
+            document.getElementById('new-users-week').textContent = data.new_users_week;
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// График активности (заглушка)
+const ctx = document.getElementById('activityChart').getContext('2d');
+const activityChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+        datasets: [{
+            label: 'Активные пользователи',
+            data: [12, 19, 3, 5, 2, 3, 7],
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Автообновление статистики каждые 30 секунд
+setInterval(refreshStats, 30000);
+</script>
+{% endblock %} 

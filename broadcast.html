@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Массовая рассылка - Telegram Bot CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-broadcast-tower"></i> Массовая рассылка
+    </h1>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-paper-plane"></i> Отправить сообщение всем пользователям
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="broadcastForm">
+                    <div class="mb-3">
+                        <label for="messageText" class="form-label">Текст сообщения:</label>
+                        <textarea class="form-control" id="messageText" rows="5" placeholder="Введите текст сообщения для рассылки..." required></textarea>
+                        <div class="form-text">Сообщение будет отправлено всем активным пользователям бота.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Статистика рассылки:</label>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">Всего пользователей</h6>
+                                        <h4 id="totalUsers">0</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">Активных</h6>
+                                        <h4 id="activeUsers">0</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-info text-white">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">Будет отправлено</h6>
+                                        <h4 id="willSend">0</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-warning text-white">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">Ожидает отправки</h6>
+                                        <h4 id="pending">0</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-secondary me-md-2" onclick="previewMessage()">
+                            <i class="fas fa-eye"></i> Предварительный просмотр
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="sendButton">
+                            <i class="fas fa-paper-plane"></i> Отправить рассылку
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно предварительного просмотра -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Предварительный просмотр</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="card">
+                    <div class="card-header">
+                        <small class="text-muted">Сообщение будет выглядеть так:</small>
+                    </div>
+                    <div class="card-body">
+                        <div id="previewContent"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение рассылки</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите отправить это сообщение всем пользователям?</p>
+                <div class="alert alert-info">
+                    <strong>Сообщение:</strong><br>
+                    <span id="confirmMessage"></span>
+                </div>
+                <div class="alert alert-warning">
+                    <strong>Количество получателей:</strong> <span id="confirmCount"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="sendBroadcast()">Отправить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Прогресс отправки -->
+<div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Отправка рассылки</h5>
+            </div>
+            <div class="modal-body">
+                <div class="progress mb-3">
+                    <div class="progress-bar" role="progressbar" style="width: 0%" id="progressBar"></div>
+                </div>
+                <div class="text-center">
+                    <p id="progressText">Подготовка к отправке...</p>
+                    <p class="text-muted">
+                        Отправлено: <span id="sentCount">0</span> / <span id="totalCount">0</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let broadcastData = {};
+
+// Загрузка статистики при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    loadBroadcastStats();
+});
+
+function loadBroadcastStats() {
+    fetch('/api/broadcast', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({message: 'test'})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('totalUsers').textContent = data.user_count;
+            document.getElementById('activeUsers').textContent = data.user_count;
+            document.getElementById('willSend').textContent = data.user_count;
+            document.getElementById('pending').textContent = data.user_count;
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function previewMessage() {
+    const messageText = document.getElementById('messageText').value;
+    if (!messageText.trim()) {
+        alert('Введите текст сообщения');
+        return;
+    }
+    
+    document.getElementById('previewContent').innerHTML = messageText.replace(/\n/g, '<br>');
+    new bootstrap.Modal(document.getElementById('previewModal')).show();
+}
+
+document.getElementById('broadcastForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const messageText = document.getElementById('messageText').value;
+    if (!messageText.trim()) {
+        alert('Введите текст сообщения');
+        return;
+    }
+    
+    // Сохраняем данные для отправки
+    broadcastData.message = messageText;
+    broadcastData.userCount = parseInt(document.getElementById('willSend').textContent);
+    
+    // Показываем модальное окно подтверждения
+    document.getElementById('confirmMessage').textContent = messageText;
+    document.getElementById('confirmCount').textContent = broadcastData.userCount;
+    new bootstrap.Modal(document.getElementById('confirmModal')).show();
+});
+
+function sendBroadcast() {
+    // Закрываем модальное окно подтверждения
+    bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+    
+    // Показываем прогресс
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('sentCount').textContent = '0';
+    document.getElementById('totalCount').textContent = broadcastData.userCount;
+    document.getElementById('progressText').textContent = 'Начинаем отправку...';
+    
+    const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+    progressModal.show();
+    
+    // Имитация отправки (в реальном приложении здесь будет API вызов)
+    let sent = 0;
+    const total = broadcastData.userCount;
+    const interval = setInterval(() => {
+        sent += Math.floor(Math.random() * 5) + 1;
+        if (sent >= total) sent = total;
+        
+        const progress = (sent / total) * 100;
+        document.getElementById('progressBar').style.width = progress + '%';
+        document.getElementById('sentCount').textContent = sent;
+        document.getElementById('progressText').textContent = `Отправлено ${sent} из ${total} сообщений`;
+        
+        if (sent >= total) {
+            clearInterval(interval);
+            setTimeout(() => {
+                progressModal.hide();
+                alert('Рассылка завершена!');
+                document.getElementById('messageText').value = '';
+            }, 1000);
+        }
+    }, 200);
+}
+
+// Обновление статистики при изменении текста
+document.getElementById('messageText').addEventListener('input', function() {
+    const messageText = this.value;
+    if (messageText.trim()) {
+        document.getElementById('pending').textContent = document.getElementById('willSend').textContent;
+    } else {
+        document.getElementById('pending').textContent = '0';
+    }
+});
+</script>
+{% endblock %} 
